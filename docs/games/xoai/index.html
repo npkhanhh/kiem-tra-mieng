@@ -13,111 +13,34 @@
 <body>
 <svg id="scene" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet">
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#7cc8f5"/>
-      <stop offset="1" stop-color="#d9f1ff"/>
-    </linearGradient>
-    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#dcae74"/>
-      <stop offset="1" stop-color="#c88f55"/>
-    </linearGradient>
-    <linearGradient id="trunk" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#5a3519"/>
-      <stop offset=".45" stop-color="#8a5a32"/>
-      <stop offset="1" stop-color="#4d2c13"/>
-    </linearGradient>
-    <radialGradient id="mango" cx=".35" cy=".3" r=".8">
-      <stop offset="0" stop-color="#fff6a0"/>
-      <stop offset=".45" stop-color="#ffd43b"/>
-      <stop offset="1" stop-color="#e9a000"/>
-    </radialGradient>
     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
       <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#fff59d" flood-opacity="1"/>
     </filter>
     <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000" flood-opacity=".25"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#3b1d05" flood-opacity=".35"/>
     </filter>
   </defs>
 
-  <rect width="1600" height="620" fill="url(#sky)"/>
-  <g fill="#fff" opacity=".9">
-    <g transform="translate(180 110)"><ellipse rx="70" ry="26"/><ellipse cx="45" cy="-14" rx="45" ry="28"/><ellipse cx="-40" cy="-8" rx="36" ry="22"/></g>
-    <g transform="translate(1420 90)"><ellipse rx="80" ry="28"/><ellipse cx="40" cy="-18" rx="50" ry="30"/><ellipse cx="-46" cy="-6" rx="38" ry="22"/></g>
-    <g transform="translate(760 60) scale(.7)"><ellipse rx="70" ry="26"/><ellipse cx="45" cy="-14" rx="45" ry="28"/></g>
-  </g>
-  <path d="M0 560 Q200 470 420 540 T860 520 T1300 530 T1600 500 V640 H0Z" fill="#9fcf6a"/>
-  <path d="M0 600 Q260 540 520 590 T1100 580 T1600 570 V660 H0Z" fill="#7fb653"/>
-
-  <g id="house">
-    <rect x="50" y="470" width="270" height="160" fill="#ecd3a3"/>
-    <rect x="50" y="470" width="270" height="12" fill="#cfae78"/>
-    <rect x="150" y="530" width="62" height="100" fill="#6b3e26"/>
-    <rect x="245" y="515" width="50" height="44" fill="#4a2a17"/>
-    <path d="M245 537 H295 M270 515 V559" stroke="#ecd3a3" stroke-width="4"/>
-    <rect x="70" y="515" width="50" height="44" fill="#4a2a17"/>
-    <path d="M70 537 H120 M95 515 V559" stroke="#ecd3a3" stroke-width="4"/>
-    <path d="M20 482 L120 380 H260 L350 482Z" fill="#b5523b"/>
-    <path d="M45 456 H327 M70 430 H302 M95 404 H278" stroke="#8f3b28" stroke-width="5"/>
-  </g>
-  <g id="fence" stroke="#9b7146" stroke-width="8" stroke-linecap="round">
-    <path d="M1250 640 V575 M1300 640 V575 M1350 640 V575 M1400 640 V575 M1450 640 V575 M1500 640 V575 M1550 640 V575 M1235 595 H1580 M1235 620 H1580"/>
-  </g>
-
-  <path d="M0 620 Q400 600 800 615 T1600 610 V900 H0Z" fill="url(#ground)"/>
-  <g fill="#b97d45" opacity=".5">
-    <ellipse cx="260" cy="840" rx="140" ry="18"/>
-    <ellipse cx="1300" cy="780" rx="180" ry="20"/>
-    <ellipse cx="1120" cy="870" rx="120" ry="14"/>
-  </g>
-  <ellipse cx="960" cy="775" rx="330" ry="40" fill="#8b5a2b" opacity=".35"/>
-
-  <path id="trunk-shape" fill="url(#trunk)" d="M860 780 C880 700 890 600 900 470 C850 440 790 420 720 400 L730 380 C800 395 860 410 905 435 C905 380 900 330 890 290 L930 285 C940 330 945 380 950 430 C990 390 1050 360 1130 340 L1140 362 C1070 385 1010 420 975 470 C985 600 1000 700 1060 780Z"/>
-  <g id="canopy"></g>
+  <image href="art/background.webp" width="1600" height="900" preserveAspectRatio="none"/>
   <g id="tree-mangoes"></g>
   <g id="tree-labels"></g>
 
-  <g id="redkid">
-    <path d="M580 755 L572 800 M620 755 L630 800" stroke="#f0c193" stroke-width="12" stroke-linecap="round"/>
-    <ellipse cx="568" cy="804" rx="12" ry="6" fill="#5b3a1e"/>
-    <ellipse cx="634" cy="804" rx="12" ry="6" fill="#5b3a1e"/>
-    <g class="arms-down" stroke="#f0c193" stroke-width="11" stroke-linecap="round" fill="none">
-      <path d="M582 684 L556 728"/><path d="M618 684 L644 728"/>
+  <g id="redkid" transform="translate(120 762)">
+    <g class="hop">
+      <image class="idle" href="art/kid-point.webp" x="-78.4" y="-240" width="156.7" height="240"/>
+      <image class="cheer" href="art/kid-cheer.webp" x="-84.9" y="-281" width="169.8" height="251.2"/>
     </g>
-    <g class="arms-up" stroke="#f0c193" stroke-width="11" stroke-linecap="round" fill="none">
-      <path d="M582 684 L560 630"/><path d="M618 684 L642 630"/>
-    </g>
-    <path d="M576 676 H624 L630 738 H570Z" fill="#e53935"/>
-    <rect x="572" y="732" width="56" height="28" rx="6" fill="#1e5aa8"/>
-    <circle cx="600" cy="640" r="30" fill="#f0c193"/>
-    <path d="M570 636 C568 600 632 598 632 632 C622 618 606 626 596 614 C590 626 578 622 570 636Z" fill="#3b2410"/>
-    <circle cx="590" cy="644" r="3.5" fill="#3b2410"/>
-    <circle cx="612" cy="644" r="3.5" fill="#3b2410"/>
-    <path d="M590 656 Q601 668 612 656" stroke="#3b2410" stroke-width="3" fill="#fff"/>
   </g>
 
   <g id="beo">
-    <path d="M318 692 L306 760 M346 692 L358 760" stroke="#c98e5c" stroke-width="13" stroke-linecap="round"/>
-    <ellipse cx="302" cy="764" rx="13" ry="6" fill="#5b3a1e"/>
-    <ellipse cx="362" cy="764" rx="13" ry="6" fill="#5b3a1e"/>
-    <path d="M308 590 H352 L360 668 H300Z" fill="#f4f1ea"/>
-    <rect x="300" y="660" width="60" height="38" rx="6" fill="#8d6e4a"/>
-    <circle cx="330" cy="550" r="32" fill="#d9a06c"/>
-    <path d="M298 546 C292 510 360 500 364 540 L352 528 L346 540 L336 522 L326 538 L316 522 L310 540Z" fill="#2b1a0d"/>
-    <circle cx="320" cy="554" r="3.5" fill="#2b1a0d"/>
-    <circle cx="342" cy="554" r="3.5" fill="#2b1a0d"/>
-    <path id="beo-mouth" d="M322 568 Q331 576 340 568" stroke="#2b1a0d" stroke-width="3" fill="none"/>
-  </g>
-  <line id="pole" x1="0" y1="0" x2="0" y2="0" stroke="#a8743f" stroke-width="9" stroke-linecap="round"/>
-  <g id="beo-arms" stroke="#c98e5c" stroke-width="12" stroke-linecap="round" fill="none">
-    <path id="arm1"/><path id="arm2"/>
+    <g class="hop">
+      <g id="pole"><image href="art/pole.webp" y="-52" width="2103" height="105" preserveAspectRatio="none"/></g>
+      <image class="ready" href="art/beo-ready.webp" x="-167.6" y="-340" width="335.1" height="340"/>
+      <image class="poke" href="art/beo-poke.webp" x="-167.6" y="-340" width="335.1" height="340"/>
+    </g>
   </g>
 
-  <g id="plate" filter="url(#soft)">
-    <ellipse cx="760" cy="826" rx="125" ry="34" fill="#fafafa" stroke="#d0d0d0" stroke-width="3"/>
-    <ellipse cx="760" cy="822" rx="92" ry="22" fill="#efefef"/>
-    <path d="M684 822 Q716 786 760 783 Q804 786 836 822 Q760 836 684 822Z" fill="#e5602b"/>
-    <g id="speckles"></g>
-  </g>
+  <image id="plate" href="art/plate.webp" x="235" y="718" width="250" height="163" filter="url(#soft)"/>
   <g id="fallen"></g>
   <g id="particles"></g>
   <g id="bubbles"></g>

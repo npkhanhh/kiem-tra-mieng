@@ -5,7 +5,7 @@ body {
   margin: 0;
   overflow: hidden;
   font-family: "Baloo 2", system-ui, sans-serif;
-  background: linear-gradient(#7cc8f5 0 50%, #c88f55 50% 100%);
+  background: #2b1d10;
   color: #3b2410;
 }
 #scene { display: block; width: 100vw; height: 100vh; user-select: none; }
@@ -24,10 +24,10 @@ body {
 @keyframes sway { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
 @keyframes shiver { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
 
-#redkid .arms-up { display: none; }
-#redkid.cheer .arms-up { display: inline; }
-#redkid.cheer .arms-down { display: none; }
-#redkid.cheer, #beo.cheer { animation: hop .35s ease-in-out infinite alternate; }
+#redkid .cheer, #beo .poke { display: none; }
+#redkid.cheer .cheer, #beo.poking .poke { display: inline; }
+#redkid.cheer .idle, #beo.poking .ready { display: none; }
+#redkid.cheer .hop, #beo.cheer .hop { animation: hop .35s ease-in-out infinite alternate; }
 @keyframes hop { to { transform: translateY(-14px); } }
 
 .bubble rect { fill: #fff; stroke: #3b2410; stroke-width: 2.5; }

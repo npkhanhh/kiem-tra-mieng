@@ -7,6 +7,8 @@ Random student picker games for the classroom. Static HTML, CSS and JS, no build
 
 GitHub Pages serves `docs/` from `main`: https://npkhanhh.github.io/kiem-tra-mieng/
 
+Source images are in `art/`. After replacing one, run `./build-art.sh` to rebuild the WebP files in `docs/games/xoai/art/`.
+
 Run locally:
 
 ```sh

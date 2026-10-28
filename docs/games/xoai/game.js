@@ -24,14 +24,23 @@ const STRINGS = {
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const STORE_KEY = 'kiem-tra-mieng:class';
-const POLE_BASE = { x: 300, y: 690 };
-const POLE_REST = { x: 560, y: 330 };
-const PLATE = { x: 760, y: 790 };
-const CANOPY = { cx: 960, cy: 300, rx: 520, ry: 230 };
+const PLATE = { x: 360, y: 782 };
+const CANOPY = { cx: 1085, cy: 250, rx: 495, ry: 170 };
+const GROUND_Y = 845;
+const BEO_REST_X = 640;
+// Hand positions are pixels in the Bèo images as cropped by build-art.sh.
+const BEO = {
+  k: 340 / 1169,
+  foot: { x: 576, y: 1169 },
+  hands: {
+    ready: [{ x: 857, y: 198 }, { x: 944, y: 21 }],
+    poke: [{ x: 1037, y: 213 }, { x: 1105, y: 35 }],
+  },
+};
+const POLE = { length: 2103, shaft: 60, thick: 16, back: 60 };
 
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const easeOut = t => 1 - (1 - t) ** 3;
 const easeIn = t => t * t;
 const lerp = (a, b, t) => a + (b - a) * t;
 
@@ -163,51 +172,14 @@ const sfx = {
 
 // Scene
 
-function drawCanopy() {
-  const g = $('canopy');
-  const rand = seeded(7);
-  const layers = [
-    { color: '#2f6b2a', count: 46, r: [70, 110], dx: 0, dy: 0, spread: 1 },
-    { color: '#3f8f35', count: 40, r: [50, 85], dx: -10, dy: -14, spread: 0.92 },
-    { color: '#5cad45', count: 30, r: [26, 50], dx: -22, dy: -28, spread: 0.85 },
-  ];
-  for (const layer of layers) {
-    for (let i = 0; i < layer.count; i++) {
-      const a = rand() * Math.PI * 2;
-      const d = Math.sqrt(rand()) * layer.spread;
-      svg('circle', {
-        cx: CANOPY.cx + Math.cos(a) * d * (CANOPY.rx + 20) + layer.dx,
-        cy: CANOPY.cy + Math.sin(a) * d * (CANOPY.ry + 10) + layer.dy,
-        r: lerp(layer.r[0], layer.r[1], rand()),
-        fill: layer.color,
-      }, g);
-    }
-  }
-}
-
-function drawSpeckles() {
-  const g = $('speckles');
-  const rand = seeded(3);
-  for (let i = 0; i < 70; i++) {
-    const x = lerp(700, 820, rand());
-    const top = 784 + Math.abs(x - 760) * 0.55;
-    svg('circle', {
-      cx: x,
-      cy: lerp(top + 4, 822, rand()),
-      r: lerp(1.2, 3, rand()),
-      fill: rand() < 0.5 ? '#b3361a' : '#f7a26b',
-    }, g);
-  }
-}
-
 function canopySlots(count) {
   const rand = seeded(11);
   for (let s = 1; s >= 0.45; s -= 0.05) {
-    const sx = 112 * s;
-    const sy = 104 * s;
+    const sx = 108 * s;
+    const sy = 112 * s;
     const slots = [];
     let row = 0;
-    for (let y = CANOPY.cy - CANOPY.ry + 40 * s; y < CANOPY.cy + CANOPY.ry - 20; y += sy, row++) {
+    for (let y = CANOPY.cy - CANOPY.ry + 30 * s; y < CANOPY.cy + CANOPY.ry; y += sy, row++) {
       for (let x = CANOPY.cx - CANOPY.rx + (row % 2) * sx / 2; x < CANOPY.cx + CANOPY.rx; x += sx) {
         const nx = (x - CANOPY.cx) / CANOPY.rx;
         const ny = (y - CANOPY.cy) / CANOPY.ry;
@@ -225,32 +197,19 @@ function canopySlots(count) {
 function makeMango(name) {
   const g = svg('g', { class: 'mango' });
   const body = svg('g', { class: 'body' }, g);
-  svg('path', { d: 'M2 -34 Q5 -44 0 -50', stroke: '#5d4026', 'stroke-width': 3.5, fill: 'none', 'stroke-linecap': 'round' }, body);
-  svg('path', { d: 'M2 -44 C14 -58 32 -52 36 -44 C24 -36 10 -38 2 -44Z', fill: '#4caf50' }, body);
-  svg('path', {
-    d: 'M2 -34 C24 -34 32 -10 29 10 C26 30 10 38 -6 37 C-22 35 -30 18 -29 0 C-28 -20 -16 -34 2 -34Z',
-    fill: 'url(#mango)',
-    stroke: '#d08a00',
-    'stroke-width': 1.5,
-  }, body);
-  svg('ellipse', { cx: 14, cy: -22, rx: 12, ry: 7, fill: '#9ccc3c', opacity: 0.45, transform: 'rotate(30 14 -22)' }, body);
-  for (const x of [-9, 9]) {
-    svg('ellipse', { cx: x, cy: -2, rx: 4, ry: 5.5, fill: '#3b2410' }, body);
-    svg('circle', { cx: x + 1.4, cy: -4.2, r: 1.6, fill: '#fff' }, body);
-    svg('circle', { cx: x * 1.9, cy: 9, r: 5, fill: '#ff8a80', opacity: 0.6 }, body);
+  for (const face of ['happy', 'scared']) {
+    svg('image', { class: face, href: `art/mango-${face}.webp`, x: -23.8, y: -49.8, width: 56.4, height: 80 }, body);
   }
-  svg('path', { class: 'happy', d: 'M-6 9 Q0 15 6 9', stroke: '#3b2410', 'stroke-width': 2.4, fill: 'none', 'stroke-linecap': 'round' }, body);
-  svg('ellipse', { class: 'scared', cx: 0, cy: 12, rx: 4, ry: 5, fill: '#3b2410' }, body);
 
   const label = svg('g', { class: 'label' });
-  const rect = svg('rect', { y: 42, height: 22, rx: 7 }, label);
-  const text = svg('text', { y: 58, 'text-anchor': 'middle' }, label);
-  return { g, label, rect, text, name, x: 0, y: 0, s: 1, r: 0 };
+  const rect = svg('rect', { y: 34, height: 22, rx: 7 }, label);
+  const text = svg('text', { y: 50, 'text-anchor': 'middle' }, label);
+  return { g, label, rect, text, name, x: 0, y: 0, s: 1, r: 0, labelDy: 0 };
 }
 
 function place(m) {
   m.g.setAttribute('transform', `translate(${m.x} ${m.y}) rotate(${m.r}) scale(${m.s})`);
-  m.label.setAttribute('transform', `translate(${m.x} ${m.y}) scale(${m.s})`);
+  m.label.setAttribute('transform', `translate(${m.x} ${m.y + m.labelDy * m.s}) scale(${m.s})`);
 }
 
 function sizeLabel(m, maxWidth = Infinity) {
@@ -308,32 +267,40 @@ function updateUI() {
 
 // Pole and kids
 
-const pole = { x: POLE_REST.x, y: POLE_REST.y };
+const beo = { x: BEO_REST_X, y: GROUND_Y, pose: 'ready', reach: 130 };
 
-function drawPole() {
-  const dx = pole.x - POLE_BASE.x;
-  const dy = pole.y - POLE_BASE.y;
-  const len = Math.hypot(dx, dy);
-  const ux = dx / len;
-  const uy = dy / len;
-  const line = $('pole');
-  line.setAttribute('x1', POLE_BASE.x);
-  line.setAttribute('y1', POLE_BASE.y);
-  line.setAttribute('x2', pole.x);
-  line.setAttribute('y2', pole.y);
-  const h1 = { x: POLE_BASE.x + ux * 70, y: POLE_BASE.y + uy * 70 };
-  const h2 = { x: POLE_BASE.x + ux * 130, y: POLE_BASE.y + uy * 130 };
-  $('arm1').setAttribute('d', `M316 600 Q300 640 ${h1.x} ${h1.y}`);
-  $('arm2').setAttribute('d', `M346 600 Q360 600 ${h2.x} ${h2.y}`);
+function grip(pose) {
+  const [low, high] = BEO.hands[pose].map(p => ({ x: (p.x - BEO.foot.x) * BEO.k, y: (p.y - BEO.foot.y) * BEO.k }));
+  const len = Math.hypot(high.x - low.x, high.y - low.y);
+  return { low, d: { x: (high.x - low.x) / len, y: (high.y - low.y) / len } };
 }
 
-function movePole(to, ms, ease = easeOut) {
-  const from = { ...pole };
+function drawBeo() {
+  const { low, d } = grip(beo.pose);
+  const angle = Math.atan2(d.y, d.x) * 180 / Math.PI;
+  const sx = (POLE.back + beo.reach) / POLE.length;
+  const sy = POLE.thick / POLE.shaft;
+  $('pole').setAttribute('transform', `translate(${low.x - d.x * POLE.back} ${low.y - d.y * POLE.back}) rotate(${angle}) scale(${sx} ${sy})`);
+  $('beo').setAttribute('transform', `translate(${beo.x} ${beo.y})`);
+  $('beo').classList.toggle('poking', beo.pose === 'poke');
+}
+
+function aim(m) {
+  const { low, d } = grip('poke');
+  const reach = (m.y - GROUND_Y - low.y) / d.y;
+  return { x: m.x - d.x * reach - low.x, reach };
+}
+
+function walkTo(spot) {
+  const from = { x: beo.x, reach: beo.reach };
+  const ms = 300 + Math.abs(spot.x - from.x) * 0.6;
+  const steps = Math.max(1, Math.round(ms / 180));
   return tween(ms, t => {
-    pole.x = lerp(from.x, to.x, t);
-    pole.y = lerp(from.y, to.y, t);
-    drawPole();
-  }, ease);
+    beo.x = lerp(from.x, spot.x, t);
+    beo.y = GROUND_Y - Math.abs(Math.sin(t * Math.PI * steps)) * 12;
+    beo.reach = lerp(from.reach, spot.reach, t);
+    drawBeo();
+  });
 }
 
 function say(x, y, text, ms = 1800) {
@@ -400,22 +367,21 @@ async function roll(target) {
     m.g.classList.add('hot');
     last = m;
     sfx.tick();
-    const delay = lerp(70, 360, (i / steps) ** 2);
-    await movePole({ x: m.x - 40, y: m.y + 40 }, delay * 0.9);
-    await sleep(delay * 0.1);
+    await sleep(lerp(70, 360, (i / steps) ** 2));
   }
 }
 
-async function jab(m) {
-  $('beo-mouth').setAttribute('d', 'M322 566 Q331 584 340 566Z');
-  const hit = { x: m.x - 8, y: m.y + 8 };
-  const back = { x: m.x - 70, y: m.y + 70 };
+async function jab() {
   for (let i = 0; i < 3; i++) {
-    await movePole(back, 140);
+    beo.pose = 'poke';
+    drawBeo();
     sfx.jab();
-    await movePole(hit, 90, easeIn);
+    await sleep(150);
+    if (i === 2) break;
+    beo.pose = 'ready';
+    drawBeo();
+    await sleep(200);
   }
-  $('beo-mouth').setAttribute('d', 'M322 568 Q331 576 340 568');
 }
 
 async function drop(m, slot, total) {
@@ -426,9 +392,13 @@ async function drop(m, slot, total) {
   m.label.classList.add('fallen');
   m.label.setAttribute('opacity', 0);
   const from = { x: m.x, y: m.y, s: m.s };
-  const to = { x: PLATE.x + (slot - (total - 1) / 2) * 125, y: PLATE.y - slot * 4, s: 1.35 };
+  const to = { x: PLATE.x + (slot - (total - 1) / 2) * 80, y: PLATE.y - slot * 4, s: 1.35 };
+  m.labelDy = slot % 2 ? -110 : 0;
   const spin = (randomInt(2) ? 1 : -1) * (300 + randomInt(120));
-  movePole(POLE_REST, 500);
+  setTimeout(() => {
+    beo.pose = 'ready';
+    drawBeo();
+  }, 250);
   sfx.fall();
   await tween(650, t => {
     m.x = lerp(from.x, to.x, t);
@@ -446,7 +416,7 @@ async function drop(m, slot, total) {
     m.g.setAttribute('transform', `translate(${m.x} ${m.y + k * 8}) scale(${m.s * (1 + k * 0.18)} ${m.s * (1 - k * 0.18)})`);
   });
   place(m);
-  sizeLabel(m);
+  sizeLabel(m, 115);
   m.label.removeAttribute('opacity');
 }
 
@@ -467,13 +437,14 @@ async function round() {
   }
 
   const picks = pick(state.perRound);
-  say(600, 590, STRINGS.hurry, 2200);
+  say(170, 500, STRINGS.hurry, 3500);
   for (const [i, m] of picks.entries()) {
     await roll(m);
+    await walkTo(aim(m));
     await shout(STRINGS.chant);
     await sleep(250);
     shout(STRINGS.heave);
-    await jab(m);
+    await jab();
     await drop(m, i, picks.length);
     await sleep(350);
   }
@@ -575,9 +546,7 @@ function bindSettings() {
 for (const node of document.querySelectorAll('[data-s]')) node.textContent = STRINGS[node.dataset.s];
 $('history').dataset.empty = STRINGS.historyEmpty;
 
-drawCanopy();
-drawSpeckles();
-drawPole();
+drawBeo();
 bindSettings();
 
 $('shake').addEventListener('click', round);
