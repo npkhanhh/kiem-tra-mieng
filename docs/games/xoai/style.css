@@ -35,8 +35,9 @@ body {
   75% { transform: rotate(4deg); }
 }
 
-#bird .wing { transform-box: fill-box; transform-origin: 50% 100%; animation: flap .15s ease-in-out infinite alternate; }
-@keyframes flap { to { transform: scaleY(-.7); } }
+#bird image { animation: flap .26s steps(1) infinite; }
+#bird .down { animation-delay: -.13s; }
+@keyframes flap { 50% { opacity: 0; } }
 
 #redkid .cheer, #beo .poke { display: none; }
 #redkid.cheer .cheer, #beo.poking .poke { display: inline; }

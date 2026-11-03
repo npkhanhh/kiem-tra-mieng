@@ -598,10 +598,10 @@ const blowOrDrop = () => Math.random() < WIND_DROP_CHANCE ? 'drop' : 'blow';
 // Bird
 
 const bird = { x: 0, y: 0 };
-const hang = s => 47 + 45 * s;
+const hang = s => 45 * s;
 
 function drawBird() {
-  $('bird').setAttribute('transform', `translate(${bird.x} ${bird.y}) scale(1.3)`);
+  $('bird').setAttribute('transform', `translate(${bird.x} ${bird.y})`);
 }
 
 // Flies the bird to (x, y) on a curve sag pixels below the straight line. A carried mango m hangs from its feet and shrinks to its tree size.
