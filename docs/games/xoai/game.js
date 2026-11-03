@@ -5,6 +5,8 @@ const STRINGS = {
   heave: 'HẦY-A!',
   thud: 'BỊCH!',
   hurry: 'Anh Bèo chọc lẹ lên!',
+  huh: '?',
+  what: '?!',
   start: '🥭 Bắt đầu!',
   again: '🥭 Chơi lượt mới!',
   empty: 'Hết người rồi',
@@ -38,6 +40,9 @@ const BEO = {
   },
 };
 const POLE = { length: 2103, shaft: 60, thick: 16, back: 60 };
+const TWIST_CHANCE = 0.5;
+const JUICE = ['#e5602b', '#b3361a'];
+const LEAVES = ['#4f7f2a', '#7aa63a'];
 
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -163,6 +168,8 @@ const sfx = {
   tick: () => tone(1100, 0.05, { type: 'square', vol: 0.04 }),
   jab: () => tone(260, 0.12, { type: 'triangle', vol: 0.2, to: 120 }),
   fall: () => tone(900, 0.6, { type: 'sine', vol: 0.08, to: 200 }),
+  boing: () => tone(200, 0.35, { type: 'triangle', vol: 0.18, to: 520 }),
+  rustle: () => whoosh(0.5),
   thud: () => {
     tone(150, 0.3, { vol: 0.6, to: 45 });
     whoosh(0.15);
@@ -316,6 +323,10 @@ function say(x, y, text, ms = 1800) {
   setTimeout(() => g.remove(), ms);
 }
 
+function beoSays(text, ms = 1200) {
+  say(beo.x - 60, GROUND_Y - 365, text, ms);
+}
+
 async function shout(text, x = 800, y = 420, ms = 900) {
   const el = $('shout');
   el.setAttribute('x', x);
@@ -327,10 +338,10 @@ async function shout(text, x = 800, y = 420, ms = 900) {
   await sleep(ms * 0.6);
 }
 
-function splash(x, y) {
+function splash(x, y, colors = JUICE) {
   const layer = $('particles');
   const bits = Array.from({ length: 26 }, () => ({
-    node: svg('circle', { r: 2 + Math.random() * 3, fill: Math.random() < 0.5 ? '#e5602b' : '#b3361a' }, layer),
+    node: svg('circle', { r: 2 + Math.random() * 3, fill: colors[randomInt(colors.length)] }, layer),
     vx: (Math.random() - 0.5) * 520,
     vy: -200 - Math.random() * 300,
   }));
@@ -348,8 +359,8 @@ function splash(x, y) {
 
 let busy = false;
 
-function pick(count) {
-  const onTree = mangoes.filter(m => m.onTree);
+function pick(count, skip = []) {
+  const onTree = mangoes.filter(m => m.onTree && !skip.includes(m));
   const picks = [];
   for (let i = 0; i < Math.min(count, onTree.length); i++) {
     picks.push(onTree.splice(randomInt(onTree.length), 1)[0]);
@@ -357,9 +368,8 @@ function pick(count) {
   return picks;
 }
 
-async function roll(target) {
+async function roll(target, steps) {
   const onTree = mangoes.filter(m => m.onTree);
-  const steps = 16;
   let last;
   for (let i = 0; i < steps; i++) {
     const m = i === steps - 1 ? target : onTree.filter(c => c !== last)[randomInt(Math.max(1, onTree.length - 1))] || target;
@@ -382,6 +392,49 @@ async function jab() {
     drawBeo();
     await sleep(200);
   }
+}
+
+async function attempt(m, steps, chant) {
+  await roll(m, steps);
+  await walkTo(aim(m));
+  if (chant) {
+    await shout(STRINGS.chant);
+    await sleep(250);
+  }
+  shout(STRINGS.heave);
+  await jab();
+}
+
+async function resist(m) {
+  setTimeout(() => {
+    beo.pose = 'ready';
+    drawBeo();
+  }, 150);
+  sfx.boing();
+  splash(m.x, m.y, LEAVES);
+  m.g.classList.add('wobble');
+  await sleep(800);
+  m.g.classList.remove('wobble', 'hot');
+}
+
+// The target holds on through the poke at it and the pokes at two decoys, then falls by itself.
+async function fakeOut(target, [second, third]) {
+  await attempt(target, 16, true);
+  await resist(target);
+  beoSays(STRINGS.huh);
+  await sleep(600);
+  await attempt(second, 8, false);
+  await resist(second);
+  say(170, 500, STRINGS.hurry, 2000);
+  await sleep(700);
+  await attempt(third, 8, false);
+  await resist(third);
+  await sleep(300);
+  target.g.classList.add('loose');
+  sfx.rustle();
+  beoSays(STRINGS.what, 1500);
+  await sleep(700);
+  target.g.classList.remove('loose');
 }
 
 async function drop(m, slot, total) {
@@ -437,14 +490,11 @@ async function round() {
   }
 
   const picks = pick(state.perRound);
+  const decoys = Math.random() < TWIST_CHANCE ? pick(2, picks) : [];
   say(170, 500, STRINGS.hurry, 3500);
   for (const [i, m] of picks.entries()) {
-    await roll(m);
-    await walkTo(aim(m));
-    await shout(STRINGS.chant);
-    await sleep(250);
-    shout(STRINGS.heave);
-    await jab();
+    if (i === 0 && decoys.length === 2) await fakeOut(m, decoys);
+    else await attempt(m, 16, true);
     await drop(m, i, picks.length);
     await sleep(350);
   }
