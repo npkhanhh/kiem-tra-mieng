@@ -18,7 +18,8 @@ clip knock  629987-knocking-on-wood-door.mp3       0.11 0.2  0.08 18
 clip shake  840568-shaking-a-tree-with-a-stick.mp3 0.53 1.0  0.3  8
 clip rustle 106114-bushmovement.mp3                0    1.2  0.4  6
 clip swoosh 349698-light-slow-swoosh.mp3           0.39 0.9  0.25 12
-clip thud   405705-found-matress-hit.mp3           0    0.5  0.25 0
+clip fall   701104-whoosh-stereo-light.mp3         0.1  0.8  0.25 -3.1
+clip thud   209012-fruit-impact-1.mp3              0.09 0.33 0.1  17.4
 clip bump   653910-soft-hit.mp3                    0    0.25 0.08 0
 clip chime  541985-gasp-chimes-success-4.mp3       0    0.8  0.1  0
 clip wind   443065-leaves-rustling.mp3             1.3  3.0  1.0  25.6 0.6

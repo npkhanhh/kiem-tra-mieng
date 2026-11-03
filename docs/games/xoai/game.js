@@ -139,7 +139,7 @@ function ctx() {
 const sounds = {};
 
 function loadSounds() {
-  for (const name of ['tick', 'knock', 'shake', 'rustle', 'swoosh', 'thud', 'bump', 'chime', 'wind']) {
+  for (const name of ['tick', 'knock', 'shake', 'rustle', 'swoosh', 'fall', 'thud', 'bump', 'chime', 'wind']) {
     fetch(`sfx/${name}.mp3`)
       .then(res => res.arrayBuffer())
       .then(data => ctx().decodeAudioData(data))
@@ -566,7 +566,7 @@ async function drop(m, slot, total) {
   m.labelDy = slot % 2 ? -110 : 0;
   const spin = (randomInt(2) ? 1 : -1) * (300 + randomInt(120));
   relax(250);
-  play('swoosh');
+  play('fall');
   await tween(650, t => {
     m.x = lerp(from.x, to.x, t);
     m.y = lerp(from.y, to.y, easeIn(t));

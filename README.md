@@ -16,7 +16,8 @@ Source sounds are in `sfx/`: CC0 previews from Freesound. Run `./build-sfx.sh` t
 - shake: shaking a tree with a stick, https://freesound.org/s/840568/
 - rustle: bushmovement.wav, https://freesound.org/s/106114/
 - swoosh: light slow swoosh, https://freesound.org/s/349698/
-- thud: found matress hit, https://freesound.org/s/405705/
+- fall: Whoosh stereo light (transition), https://freesound.org/s/701104/
+- thud: Fruit Impact 1, https://freesound.org/s/209012/
 - bump: soft-hit.wav, https://freesound.org/s/653910/
 - chime: GASP_Chimes_Success_4, https://freesound.org/s/541985/
 - wind: Leaves_Rustling_Edited.wav, https://freesound.org/s/443065/
