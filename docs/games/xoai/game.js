@@ -392,10 +392,11 @@ async function jab() {
   }
 }
 
-// wind is null, 'blow' (a gust, then the poke) or 'drop' (a gust, no poke: the caller drops m).
+// wind is null, 'blow' (a gust, then the poke) or 'drop' (Bèo aims at another mango and the gust takes m: the caller drops m).
 async function attempt(m, steps, chant, wind) {
-  await roll(m, steps);
-  await walkTo(aim(m));
+  const target = wind === 'drop' ? pick(1, [m])[0] ?? m : m;
+  await roll(target, steps);
+  await walkTo(aim(target));
   if (chant) {
     await shout(STRINGS.chant);
     await sleep(250);
@@ -404,6 +405,7 @@ async function attempt(m, steps, chant, wind) {
     gust();
     await sleep(900);
     if (wind === 'drop') {
+      target.g.classList.remove('hot');
       beoSays(STRINGS.what, 1500);
       return;
     }
