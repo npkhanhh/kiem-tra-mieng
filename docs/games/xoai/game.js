@@ -1,7 +1,7 @@
 const STRINGS = {
   fallen: 'XOÀI RỤNG RỒI!',
   next: 'Gọi tiếp',
-  chant: 'LĂNG BA VÍ BỘ!',
+  chant: 'LĂNG BA VI BỘ!',
   heave: 'HẦY-A!',
   thud: 'BỊCH!',
   hurry: 'Anh Bèo chọc lẹ lên!',
