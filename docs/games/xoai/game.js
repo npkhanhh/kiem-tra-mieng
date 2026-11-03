@@ -41,8 +41,11 @@ const BEO = {
 };
 const POLE = { length: 2103, shaft: 60, thick: 16, back: 60 };
 const TWIST_CHANCE = 0.5;
+const CHAIN_CHANCE = 0.5;
+const ROW_HEIGHT = 112;
 const JUICE = ['#e5602b', '#b3361a'];
 const LEAVES = ['#4f7f2a', '#7aa63a'];
+const STARS = ['#fff59d', '#ffffff', '#ffd23f'];
 
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -170,6 +173,8 @@ const sfx = {
   fall: () => tone(900, 0.6, { type: 'sine', vol: 0.08, to: 200 }),
   boing: () => tone(200, 0.35, { type: 'triangle', vol: 0.18, to: 520 }),
   rustle: () => whoosh(0.5),
+  fling: () => whoosh(0.4),
+  bonk: () => tone(520, 0.15, { type: 'square', vol: 0.1, to: 260 }),
   thud: () => {
     tone(150, 0.3, { vol: 0.6, to: 45 });
     whoosh(0.15);
@@ -183,7 +188,7 @@ function canopySlots(count) {
   const rand = seeded(11);
   for (let s = 1; s >= 0.45; s -= 0.05) {
     const sx = 108 * s;
-    const sy = 112 * s;
+    const sy = ROW_HEIGHT * s;
     const slots = [];
     let row = 0;
     for (let y = CANOPY.cy - CANOPY.ry + 30 * s; y < CANOPY.cy + CANOPY.ry; y += sy, row++) {
@@ -327,8 +332,7 @@ function beoSays(text, ms = 1200) {
   say(beo.x - 60, GROUND_Y - 365, text, ms);
 }
 
-async function shout(text, x = 800, y = 420, ms = 900) {
-  const el = $('shout');
+async function shout(text, x = 800, y = 420, ms = 900, el = $('shout')) {
   el.setAttribute('x', x);
   el.setAttribute('y', y);
   el.textContent = text;
@@ -358,6 +362,16 @@ function splash(x, y, colors = JUICE) {
 // Round
 
 let busy = false;
+
+const byHeight = (a, b) => a.y - b.y;
+
+// The top pick must fall onto the next: at least half a row lower, and sideways at most twice the drop.
+function chainable(picks) {
+  const [top, next] = [...picks].sort(byHeight);
+  if (!next) return false;
+  const drop = next.y - top.y;
+  return drop > ROW_HEIGHT / 2 * top.s && Math.abs(next.x - top.x) <= 2 * drop;
+}
 
 function pick(count, skip = []) {
   const onTree = mangoes.filter(m => m.onTree && !skip.includes(m));
@@ -405,11 +419,15 @@ async function attempt(m, steps, chant) {
   await jab();
 }
 
-async function resist(m) {
+function relax(ms) {
   setTimeout(() => {
     beo.pose = 'ready';
     drawBeo();
-  }, 150);
+  }, ms);
+}
+
+async function resist(m) {
+  relax(150);
   sfx.boing();
   splash(m.x, m.y, LEAVES);
   m.g.classList.add('wobble');
@@ -437,21 +455,66 @@ async function fakeOut(target, [second, third]) {
   target.g.classList.remove('loose');
 }
 
-async function drop(m, slot, total) {
+function detach(m) {
   m.onTree = false;
   $('fallen').append(m.g, m.label);
   m.g.classList.remove('hot');
   m.g.classList.add('fallen');
   m.label.classList.add('fallen');
   m.label.setAttribute('opacity', 0);
+}
+
+// Flies m in an arc onto the side of target that faces it.
+async function fling(m, target) {
+  detach(m);
+  relax(250);
+  sfx.fling();
+  const from = { x: m.x, y: m.y };
+  const dx = target.x - from.x;
+  const dy = target.y - from.y;
+  const gap = 60 * target.s / Math.hypot(dx, dy);
+  const to = { x: target.x - dx * gap, y: target.y - dy * gap };
+  const peak = Math.min(from.y, to.y) - 90;
+  const spin = dx < 0 ? -360 : 360;
+  await tween(350 + Math.hypot(dx, dy) * 0.5, t => {
+    m.x = lerp(from.x, to.x, t);
+    m.y = (1 - t) ** 2 * from.y + 2 * (1 - t) * t * peak + t * t * to.y;
+    m.r = spin * t;
+    place(m);
+  });
+  m.r = 0;
+  place(m);
+}
+
+function bump(m, count) {
+  sfx.bonk();
+  splash(m.x, m.y, STARS);
+  shout(`×${count}!`, m.x, m.y - 70 * m.s, 900, $('combo'));
+}
+
+// One poke knocks the top mango onto the next, which falls onto the one after.
+async function domino(chain) {
+  await attempt(chain[0], 16, true);
+  const falls = [];
+  for (const [i, m] of chain.entries()) {
+    const next = chain[i + 1];
+    if (next) {
+      await fling(m, next);
+      bump(next, i + 2);
+    }
+    falls.push(drop(m, i, chain.length));
+  }
+  await Promise.all(falls);
+  await sleep(350);
+}
+
+async function drop(m, slot, total) {
+  detach(m);
   const from = { x: m.x, y: m.y, s: m.s };
   const to = { x: PLATE.x + (slot - (total - 1) / 2) * 80, y: PLATE.y - slot * 4, s: 1.35 };
   m.labelDy = slot % 2 ? -110 : 0;
   const spin = (randomInt(2) ? 1 : -1) * (300 + randomInt(120));
-  setTimeout(() => {
-    beo.pose = 'ready';
-    drawBeo();
-  }, 250);
+  relax(250);
   sfx.fall();
   await tween(650, t => {
     m.x = lerp(from.x, to.x, t);
@@ -490,13 +553,19 @@ async function round() {
   }
 
   const picks = pick(state.perRound);
-  const decoys = Math.random() < TWIST_CHANCE ? pick(2, picks) : [];
+  const chained = Math.random() < CHAIN_CHANCE && chainable(picks);
+  const decoys = !chained && Math.random() < TWIST_CHANCE ? pick(2, picks) : [];
   say(170, 500, STRINGS.hurry, 3500);
-  for (const [i, m] of picks.entries()) {
-    if (i === 0 && decoys.length === 2) await fakeOut(m, decoys);
-    else await attempt(m, 16, true);
-    await drop(m, i, picks.length);
-    await sleep(350);
+  if (chained) {
+    picks.sort(byHeight);
+    await domino(picks);
+  } else {
+    for (const [i, m] of picks.entries()) {
+      if (i === 0 && decoys.length === 2) await fakeOut(m, decoys);
+      else await attempt(m, 16, true);
+      await drop(m, i, picks.length);
+      await sleep(350);
+    }
   }
 
   state.called.push(...picks.map(m => m.name));

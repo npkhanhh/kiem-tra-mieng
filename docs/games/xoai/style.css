@@ -43,7 +43,7 @@ body {
 .bubble path { fill: #fff; stroke: #3b2410; stroke-width: 2.5; }
 .bubble text { font: 700 22px "Baloo 2", system-ui, sans-serif; fill: #3b2410; }
 
-#shout {
+.shout {
   font: 800 120px "Baloo 2", system-ui, sans-serif;
   fill: #ffd23f;
   stroke: #5a2d0c;
@@ -54,7 +54,8 @@ body {
   transform-origin: center;
   opacity: 0;
 }
-#shout.pop { animation: pop .9s ease-out forwards; }
+#combo { font-size: 80px; }
+.shout.pop { animation: pop .9s ease-out forwards; }
 @keyframes pop {
   0% { opacity: 0; transform: scale(.3) rotate(-8deg); }
   20% { opacity: 1; transform: scale(1.15) rotate(3deg); }
