@@ -40,8 +40,6 @@ const BEO = {
   },
 };
 const POLE = { length: 2103, shaft: 60, thick: 16, back: 60 };
-const TWIST_CHANCE = 0.5;
-const CHAIN_CHANCE = 0.5;
 const ROW_HEIGHT = 112;
 const JUICE = ['#e5602b', '#b3361a'];
 const LEAVES = ['#4f7f2a', '#7aa63a'];
@@ -335,14 +333,21 @@ function splash(x, y, colors = JUICE) {
 
 let busy = false;
 
-const byHeight = (a, b) => a.y - b.y;
+// b is at least half a row below a, and sideways at most twice the drop.
+function fallsOnto(a, b) {
+  const drop = b.y - a.y;
+  return drop > ROW_HEIGHT / 2 * a.s && Math.abs(b.x - a.x) <= 2 * drop;
+}
 
-// The top pick must fall onto the next: at least half a row lower, and sideways at most twice the drop.
-function chainable(picks) {
-  const [top, next] = [...picks].sort(byHeight);
-  if (!next) return false;
-  const drop = next.y - top.y;
-  return drop > ROW_HEIGHT / 2 * top.s && Math.abs(next.x - top.x) <= 2 * drop;
+const orders = list => list.length < 2 ? [list] : list.flatMap(m => orders(list.filter(o => o !== m)).map(rest => [m, ...rest]));
+
+// All picks in a chain if they line up, else two of them, else undefined.
+function findChain(picks) {
+  const all = orders(picks);
+  const full = all.filter(([a, b, c]) => b && fallsOnto(a, b) && (!c || c.y - b.y > -ROW_HEIGHT / 2 * b.s));
+  const pairs = all.filter(([a, b]) => b && fallsOnto(a, b)).map(o => o.slice(0, 2));
+  const found = full.length ? full : pairs;
+  return found[Math.floor(Math.random() * found.length)];
 }
 
 function pick(count, skip = []) {
@@ -464,8 +469,8 @@ function bump(m, count) {
   shout(`×${count}!`, m.x, m.y - 70 * m.s, 900, $('combo'));
 }
 
-// One poke knocks the top mango onto the next, which falls onto the one after.
-async function domino(chain) {
+// One poke knocks the first mango onto the next, which falls onto the one after.
+async function domino(chain, slot, total) {
   await attempt(chain[0], 16, true);
   const falls = [];
   for (const [i, m] of chain.entries()) {
@@ -474,7 +479,7 @@ async function domino(chain) {
       await fling(m, next);
       bump(next, i + 2);
     }
-    falls.push(drop(m, i, chain.length));
+    falls.push(drop(m, slot + i, total));
   }
   await Promise.all(falls);
   await sleep(350);
@@ -525,28 +530,31 @@ async function round() {
   }
 
   const picks = pick(state.perRound);
-  const chained = Math.random() < CHAIN_CHANCE && chainable(picks);
-  const decoys = !chained && Math.random() < TWIST_CHANCE ? pick(2, picks) : [];
+  const chain = findChain(picks);
+  const decoys = chain ? [] : pick(2, picks);
+  const groups = picks.filter(m => !chain?.includes(m)).map(m => [m]);
+  if (chain) groups.splice(Math.random() < 0.5 ? 0 : groups.length, 0, chain);
+  const order = groups.flat();
   say(170, 500, STRINGS.hurry, 3500);
-  if (chained) {
-    picks.sort(byHeight);
-    await domino(picks);
-  } else {
-    for (const [i, m] of picks.entries()) {
-      if (i === 0 && decoys.length === 2) await fakeOut(m, decoys);
-      else await attempt(m, 16, true);
-      await drop(m, i, picks.length);
-      await sleep(350);
+  for (const group of groups) {
+    const slot = order.indexOf(group[0]);
+    if (group.length > 1) {
+      await domino(group, slot, order.length);
+      continue;
     }
+    if (slot === 0 && decoys.length === 2) await fakeOut(group[0], decoys);
+    else await attempt(group[0], 16, true);
+    await drop(group[0], slot, order.length);
+    await sleep(350);
   }
 
-  state.called.push(...picks.map(m => m.name));
+  state.called.push(...order.map(m => m.name));
   saveState();
   updateUI();
   $('redkid').classList.add('cheer');
   $('beo').classList.add('cheer');
   play('chime');
-  showResult(picks.map(m => m.name));
+  showResult(order.map(m => m.name));
 }
 
 function showResult(names) {
