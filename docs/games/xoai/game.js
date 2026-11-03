@@ -132,55 +132,27 @@ function ctx() {
   return audio;
 }
 
-function tone(freq, dur, { type = 'sine', vol = 0.15, to = freq, delay = 0 } = {}) {
-  if (muted) return;
-  const a = ctx();
-  const t = a.currentTime + delay;
-  const osc = a.createOscillator();
-  const gain = a.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, t);
-  osc.frequency.exponentialRampToValueAtTime(to, t + dur);
-  gain.gain.setValueAtTime(vol, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  osc.connect(gain).connect(a.destination);
-  osc.start(t);
-  osc.stop(t + dur);
+const sounds = {};
+
+function loadSounds() {
+  for (const name of ['tick', 'knock', 'shake', 'rustle', 'swoosh', 'thud', 'bump', 'chime']) {
+    fetch(`sfx/${name}.mp3`)
+      .then(res => res.arrayBuffer())
+      .then(data => ctx().decodeAudioData(data))
+      .then(buffer => (sounds[name] = buffer));
+  }
 }
 
-function whoosh(dur = 0.35) {
-  if (muted) return;
+function play(name, vol = 1) {
+  if (muted || !sounds[name]) return;
   const a = ctx();
-  const buf = a.createBuffer(1, a.sampleRate * dur, a.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
   const src = a.createBufferSource();
-  src.buffer = buf;
-  const filter = a.createBiquadFilter();
-  filter.type = 'bandpass';
-  filter.frequency.setValueAtTime(400, a.currentTime);
-  filter.frequency.exponentialRampToValueAtTime(2500, a.currentTime + dur);
+  src.buffer = sounds[name];
   const gain = a.createGain();
-  gain.gain.setValueAtTime(0.25, a.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, a.currentTime + dur);
-  src.connect(filter).connect(gain).connect(a.destination);
+  gain.gain.value = vol;
+  src.connect(gain).connect(a.destination);
   src.start();
 }
-
-const sfx = {
-  tick: () => tone(1100, 0.05, { type: 'square', vol: 0.04 }),
-  jab: () => tone(260, 0.12, { type: 'triangle', vol: 0.2, to: 120 }),
-  fall: () => tone(900, 0.6, { type: 'sine', vol: 0.08, to: 200 }),
-  boing: () => tone(200, 0.35, { type: 'triangle', vol: 0.18, to: 520 }),
-  rustle: () => whoosh(0.5),
-  fling: () => whoosh(0.4),
-  bonk: () => tone(520, 0.15, { type: 'square', vol: 0.1, to: 260 }),
-  thud: () => {
-    tone(150, 0.3, { vol: 0.6, to: 45 });
-    whoosh(0.15);
-  },
-  fanfare: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, { type: 'triangle', vol: 0.12, delay: i * 0.11 })),
-};
 
 // Scene
 
@@ -390,7 +362,7 @@ async function roll(target, steps) {
     last?.g.classList.remove('hot');
     m.g.classList.add('hot');
     last = m;
-    sfx.tick();
+    play('tick', 0.5);
     await sleep(lerp(70, 360, (i / steps) ** 2));
   }
 }
@@ -399,7 +371,7 @@ async function jab() {
   for (let i = 0; i < 3; i++) {
     beo.pose = 'poke';
     drawBeo();
-    sfx.jab();
+    play('knock');
     await sleep(150);
     if (i === 2) break;
     beo.pose = 'ready';
@@ -428,7 +400,7 @@ function relax(ms) {
 
 async function resist(m) {
   relax(150);
-  sfx.boing();
+  play('shake');
   splash(m.x, m.y, LEAVES);
   m.g.classList.add('wobble');
   await sleep(800);
@@ -449,7 +421,7 @@ async function fakeOut(target, [second, third]) {
   await resist(third);
   await sleep(300);
   target.g.classList.add('loose');
-  sfx.rustle();
+  play('rustle');
   beoSays(STRINGS.what, 1500);
   await sleep(700);
   target.g.classList.remove('loose');
@@ -468,7 +440,7 @@ function detach(m) {
 async function fling(m, target) {
   detach(m);
   relax(250);
-  sfx.fling();
+  play('swoosh');
   const from = { x: m.x, y: m.y };
   const dx = target.x - from.x;
   const dy = target.y - from.y;
@@ -487,7 +459,7 @@ async function fling(m, target) {
 }
 
 function bump(m, count) {
-  sfx.bonk();
+  play('bump');
   splash(m.x, m.y, STARS);
   shout(`×${count}!`, m.x, m.y - 70 * m.s, 900, $('combo'));
 }
@@ -515,7 +487,7 @@ async function drop(m, slot, total) {
   m.labelDy = slot % 2 ? -110 : 0;
   const spin = (randomInt(2) ? 1 : -1) * (300 + randomInt(120));
   relax(250);
-  sfx.fall();
+  play('swoosh');
   await tween(650, t => {
     m.x = lerp(from.x, to.x, t);
     m.y = lerp(from.y, to.y, easeIn(t));
@@ -524,7 +496,7 @@ async function drop(m, slot, total) {
     place(m);
   });
   m.r = 0;
-  sfx.thud();
+  play('thud');
   splash(to.x, to.y + 20);
   shout(STRINGS.thud, to.x, to.y - 70, 700);
   await tween(260, t => {
@@ -573,7 +545,7 @@ async function round() {
   updateUI();
   $('redkid').classList.add('cheer');
   $('beo').classList.add('cheer');
-  sfx.fanfare();
+  play('chime');
   showResult(picks.map(m => m.name));
 }
 
@@ -667,6 +639,7 @@ $('history').dataset.empty = STRINGS.historyEmpty;
 
 drawBeo();
 bindSettings();
+loadSounds();
 
 $('shake').addEventListener('click', round);
 $('next').addEventListener('click', closeResult);
