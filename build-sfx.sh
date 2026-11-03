@@ -21,4 +21,4 @@ clip swoosh 349698-light-slow-swoosh.mp3           0.39 0.9  0.25 12
 clip thud   405705-found-matress-hit.mp3           0    0.5  0.25 0
 clip bump   653910-soft-hit.mp3                    0    0.25 0.08 0
 clip chime  541985-gasp-chimes-success-4.mp3       0    0.8  0.1  0
-clip wind   80937-gust-of-wind.mp3                 4.0  3.0  1.0  -9   0.6
+clip wind   443065-leaves-rustling.mp3             1.3  3.0  1.0  25.6 0.6
