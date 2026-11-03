@@ -41,6 +41,12 @@ const BEO = {
 };
 const POLE = { length: 2103, shaft: 60, thick: 16, back: 60 };
 const ROW_HEIGHT = 112;
+const PLAIN_CHANCE = 0.3;
+// Wind blows in 3 of the 7 twist rounds, so in 3 of 10 rounds.
+const WIND_CHANCE = 3 / 7;
+const WIND_DROP_CHANCE = 0.6;
+const BIRD_CHANCE = 0.15;
+const AGAIN_CHANCE = 1 / 3;
 const JUICE = ['#e5602b', '#b3361a'];
 const LEAVES = ['#4f7f2a', '#7aa63a'];
 const STARS = ['#fff59d', '#ffffff', '#ffd23f'];
@@ -133,7 +139,7 @@ function ctx() {
 const sounds = {};
 
 function loadSounds() {
-  for (const name of ['tick', 'knock', 'shake', 'rustle', 'swoosh', 'thud', 'bump', 'chime']) {
+  for (const name of ['tick', 'knock', 'shake', 'rustle', 'swoosh', 'thud', 'bump', 'chime', 'wind']) {
     fetch(`sfx/${name}.mp3`)
       .then(res => res.arrayBuffer())
       .then(data => ctx().decodeAudioData(data))
@@ -220,6 +226,7 @@ function renderTree() {
   mangoes = all.map((name, i) => {
     const m = makeMango(name);
     Object.assign(m, slots[i], { s: scale });
+    m.home = { ...slots[i], s: scale };
     m.g.querySelector('.body').style.animationDelay = `${-Math.random() * 3}s`;
     place(m);
     m.onTree = waiting.has(name);
@@ -385,15 +392,57 @@ async function jab() {
   }
 }
 
-async function attempt(m, steps, chant) {
+// wind is null, 'blow' (a gust, then the poke) or 'drop' (a gust, no poke: the caller drops m).
+async function attempt(m, steps, chant, wind) {
   await roll(m, steps);
   await walkTo(aim(m));
   if (chant) {
     await shout(STRINGS.chant);
     await sleep(250);
   }
+  if (wind) {
+    gust();
+    await sleep(900);
+    if (wind === 'drop') {
+      beoSays(STRINGS.what, 1500);
+      return;
+    }
+    await sleep(1400);
+    beoSays(STRINGS.huh);
+  }
   shout(STRINGS.heave);
   await jab();
+}
+
+// Leaves blow across the scene and the mangoes on the tree swing.
+async function gust() {
+  play('wind');
+  const swinging = mangoes.filter(m => m.onTree);
+  swinging.forEach(m => m.g.classList.add('gust'));
+  const bits = Array.from({ length: 60 }, (_, i) => {
+    const streak = i % 3 === 0;
+    return {
+      node: streak
+        ? svg('rect', { x: -100, y: -2, width: 200, height: 4, rx: 2, fill: '#fff' }, $('particles'))
+        : svg('ellipse', { rx: 16, ry: 6, fill: LEAVES[randomInt(LEAVES.length)], stroke: '#2f4f16', 'stroke-width': 1.5 }, $('particles')),
+      streak,
+      y: 40 + Math.random() * 600,
+      delay: Math.random(),
+      speed: (streak ? 1.6 : 1) + Math.random() * 0.6,
+      phase: Math.random() * 6,
+    };
+  });
+  await tween(2500, t => {
+    for (const b of bits) {
+      const p = t * 2 - b.delay;
+      const x = -100 + p * 1700 * b.speed;
+      const y = b.y + Math.sin(p * 9 + b.phase) * (b.streak ? 10 : 30);
+      b.node.setAttribute('transform', `translate(${x} ${y})` + (b.streak ? '' : ` rotate(${p * 720})`));
+      b.node.setAttribute('opacity', Math.min(b.streak ? 0.6 : 1, (1 - t) * 5));
+    }
+  });
+  bits.forEach(b => b.node.remove());
+  swinging.forEach(m => m.g.classList.remove('gust'));
 }
 
 function relax(ms) {
@@ -412,24 +461,47 @@ async function resist(m) {
   m.g.classList.remove('wobble', 'hot');
 }
 
-// The target holds on through the poke at it and the pokes at two decoys, then falls by itself.
-async function fakeOut(target, [second, third]) {
-  await attempt(target, 16, true);
-  await resist(target);
-  beoSays(STRINGS.huh);
-  await sleep(600);
-  await attempt(second, 8, false);
-  await resist(second);
-  say(170, 500, STRINGS.hurry, 2000);
-  await sleep(700);
-  await attempt(third, 8, false);
-  await resist(third);
+// The target is poked among the decoys, which all hold on. Poked last, it falls; poked earlier, it falls by itself after the last poke.
+async function fakeOut(target, decoys, wind) {
+  const pokes = [...decoys];
+  pokes.splice(randomInt(pokes.length + 1), 0, target);
+  for (const [i, m] of pokes.entries()) {
+    await attempt(m, i ? 8 : 16, !i, i ? null : wind);
+    if (m === target && i === pokes.length - 1) return;
+    await resist(m);
+    if (i === 0) {
+      beoSays(STRINGS.huh);
+      await sleep(600);
+    } else if (i < pokes.length - 1) {
+      say(170, 500, STRINGS.hurry, 2000);
+      await sleep(700);
+    }
+  }
   await sleep(300);
   target.g.classList.add('loose');
   play('rustle');
   beoSays(STRINGS.what, 1500);
   await sleep(700);
   target.g.classList.remove('loose');
+}
+
+// m is poked, falls onto the target and catches in the branches. The caller drops the target.
+async function snag(m, target, wind) {
+  await attempt(m, 16, true, wind);
+  await fling(m, target);
+  bump(target);
+  resist(m);
+  beoSays(STRINGS.what, 1500);
+  await sleep(250);
+}
+
+// A snag when a mango that was not picked hangs above m, else a fake-out with 1 or 2 decoys.
+function twist(m, picks, wind) {
+  const above = mangoes.filter(o => o.onTree && !picks.includes(o) && fallsOnto(o, m));
+  if (above.length && randomInt(2)) return snag(above[randomInt(above.length)], m, wind);
+  const decoys = pick(1 + randomInt(2), picks);
+  if (decoys.length) return fakeOut(m, decoys, wind);
+  return attempt(m, 16, true, wind);
 }
 
 function detach(m) {
@@ -443,7 +515,6 @@ function detach(m) {
 
 // Flies m in an arc onto the side of target that faces it.
 async function fling(m, target) {
-  detach(m);
   relax(250);
   play('swoosh');
   const from = { x: m.x, y: m.y };
@@ -466,16 +537,17 @@ async function fling(m, target) {
 function bump(m, count) {
   play('bump');
   splash(m.x, m.y, STARS);
-  shout(`×${count}!`, m.x, m.y - 70 * m.s, 900, $('combo'));
+  if (count) shout(`×${count}!`, m.x, m.y - 70 * m.s, 900, $('combo'));
 }
 
 // One poke knocks the first mango onto the next, which falls onto the one after.
-async function domino(chain, slot, total) {
-  await attempt(chain[0], 16, true);
+async function domino(chain, slot, total, wind) {
+  await attempt(chain[0], 16, true, wind);
   const falls = [];
   for (const [i, m] of chain.entries()) {
     const next = chain[i + 1];
     if (next) {
+      detach(m);
       await fling(m, next);
       bump(next, i + 2);
     }
@@ -513,6 +585,67 @@ async function drop(m, slot, total) {
   m.label.removeAttribute('opacity');
 }
 
+// Pokes m, with a stuck-mango or fake-out twist when twisted, and drops it onto the plate.
+async function fall(m, slot, total, twisted, wind, picks) {
+  if (twisted && wind !== 'drop') await twist(m, picks, wind);
+  else await attempt(m, 16, true, wind);
+  await drop(m, slot, total);
+  await sleep(350);
+}
+
+const blowOrDrop = () => Math.random() < WIND_DROP_CHANCE ? 'drop' : 'blow';
+
+// Bird
+
+const bird = { x: 0, y: 0 };
+const hang = s => 47 + 45 * s;
+
+function drawBird() {
+  $('bird').setAttribute('transform', `translate(${bird.x} ${bird.y}) scale(1.3)`);
+}
+
+// Flies the bird to (x, y) on a curve sag pixels below the straight line. A carried mango m hangs from its feet and shrinks to its tree size.
+function fly(x, y, ms, sag, m) {
+  const from = { x: bird.x, y: bird.y, s: m?.s };
+  $('bird').firstElementChild.setAttribute('transform', x < from.x ? 'scale(-1 1)' : '');
+  return tween(ms, t => {
+    bird.x = lerp(from.x, x, t);
+    bird.y = lerp(from.y, y, t) + Math.sin(t * Math.PI) * sag;
+    drawBird();
+    if (!m) return;
+    m.s = lerp(from.s, m.home.s, t);
+    m.x = bird.x;
+    m.y = bird.y + hang(m.s);
+    place(m);
+  });
+}
+
+// A bird swoops down to the plate, takes m and hangs it back on its branch.
+async function rescue(m) {
+  Object.assign(bird, { x: 1750, y: -120 });
+  drawBird();
+  $('bird').toggleAttribute('hidden', false);
+  play('swoosh');
+  await fly(m.x, m.y - hang(m.s), 1100, 150);
+  m.label.setAttribute('opacity', 0);
+  m.g.classList.remove('fallen');
+  beoSays(STRINGS.what, 1500);
+  await sleep(300);
+  play('swoosh');
+  await fly(m.home.x, m.home.y - hang(m.home.s), 1300, -120, m);
+  m.onTree = true;
+  m.labelDy = 0;
+  $('tree-mangoes').append(m.g);
+  $('tree-labels').append(m.label);
+  m.label.classList.remove('fallen');
+  m.label.removeAttribute('opacity');
+  sizeLabel(m, 100);
+  place(m);
+  play('rustle');
+  await fly(1750, -150, 900, 0);
+  $('bird').toggleAttribute('hidden', true);
+}
+
 async function round() {
   if (busy) return;
   if (!pool().length) {
@@ -530,22 +663,32 @@ async function round() {
   }
 
   const picks = pick(state.perRound);
-  const chain = findChain(picks);
-  const decoys = chain ? [] : pick(2, picks);
+  const plain = Math.random() < PLAIN_CHANCE;
+  const chain = plain ? undefined : findChain(picks);
   const groups = picks.filter(m => !chain?.includes(m)).map(m => [m]);
-  if (chain) groups.splice(Math.random() < 0.5 ? 0 : groups.length, 0, chain);
+  if (chain) groups.splice(randomInt(2) ? groups.length : 0, 0, chain);
   const order = groups.flat();
+  const windAt = !plain && Math.random() < WIND_CHANCE ? randomInt(groups.length) : -1;
+  const wind = blowOrDrop();
+  // Without a chain, the first mango that the wind does not drop gets a twist.
+  const twistAt = chain || plain ? -1 : groups.findIndex((_, i) => i !== windAt || wind !== 'drop');
+  let birdReady = !plain;
   say(170, 500, STRINGS.hurry, 3500);
-  for (const group of groups) {
+  for (const [i, group] of groups.entries()) {
     const slot = order.indexOf(group[0]);
-    if (group.length > 1) {
-      await domino(group, slot, order.length);
-      continue;
-    }
-    if (slot === 0 && decoys.length === 2) await fakeOut(group[0], decoys);
-    else await attempt(group[0], 16, true);
-    await drop(group[0], slot, order.length);
-    await sleep(350);
+    const gusting = i === windAt ? wind : null;
+    if (group.length > 1) await domino(group, slot, order.length, gusting);
+    else await fall(group[0], slot, order.length, i === twistAt, gusting, picks);
+    const saved = birdReady && group.find(() => Math.random() < BIRD_CHANCE);
+    if (!saved) continue;
+    birdReady = false;
+    await rescue(saved);
+    // A new pick falls in place of the saved mango. Sometimes it is the saved mango again.
+    const [other] = pick(1, picks);
+    const spare = other && Math.random() >= AGAIN_CHANCE ? other : saved;
+    if (spare !== saved) picks.push(spare);
+    order[order.indexOf(saved)] = spare;
+    await fall(spare, slot + group.indexOf(saved), order.length, true, Math.random() < WIND_CHANCE ? blowOrDrop() : null, picks);
   }
 
   state.called.push(...order.map(m => m.name));

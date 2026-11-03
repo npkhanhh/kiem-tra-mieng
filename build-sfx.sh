@@ -6,10 +6,10 @@ src=sfx
 out=docs/games/xoai/sfx
 mkdir -p "$out"
 
-# clip <name> <source> <start s> <length s> <fade-out s> <gain dB>
+# clip <name> <source> <start s> <length s> <fade-out s> <gain dB> [fade-in s]
 clip() {
   ffmpeg -v error -y -ss "$3" -t "$4" -i "$src/$2" \
-    -af "volume=$6dB,afade=d=0.005,areverse,afade=d=$5,areverse" \
+    -af "volume=$6dB,afade=d=${7:-0.005},areverse,afade=d=$5,areverse" \
     -ac 1 -b:a 64k "$out/$1.mp3"
 }
 
@@ -21,3 +21,4 @@ clip swoosh 349698-light-slow-swoosh.mp3           0.39 0.9  0.25 12
 clip thud   405705-found-matress-hit.mp3           0    0.5  0.25 0
 clip bump   653910-soft-hit.mp3                    0    0.25 0.08 0
 clip chime  541985-gasp-chimes-success-4.mp3       0    0.8  0.1  0
+clip wind   80937-gust-of-wind.mp3                 4.0  3.0  1.0  -9   0.6

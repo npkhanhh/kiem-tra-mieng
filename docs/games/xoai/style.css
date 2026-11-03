@@ -15,8 +15,9 @@ body {
 .mango.hot .body { filter: url(#glow); animation: shiver .12s linear infinite alternate; }
 .mango.wobble .body { animation: wobble .8s ease-out; }
 .mango.loose .body { animation: shiver .12s linear infinite alternate; }
-.mango:is(.hot, .wobble, .loose, .fallen) .happy { display: none; }
-.mango:is(.hot, .wobble, .loose, .fallen) .scared { display: inline; }
+.mango.gust .body { animation: gust .4s ease-in-out infinite alternate; }
+.mango:is(.hot, .wobble, .loose, .gust, .fallen) .happy { display: none; }
+.mango:is(.hot, .wobble, .loose, .gust, .fallen) .scared { display: inline; }
 .label rect { fill: #fff; stroke: #e2d4ae; stroke-width: 1.5; }
 .label text { font: 700 14px "Baloo 2", system-ui, sans-serif; fill: #2b2b2b; }
 .mango.fallen .body { animation: none; filter: none; }
@@ -25,6 +26,7 @@ body {
 
 @keyframes sway { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
 @keyframes shiver { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+@keyframes gust { from { transform: rotate(-6deg); } to { transform: rotate(-24deg); } }
 @keyframes wobble {
   15% { transform: rotate(32deg); }
   30% { transform: rotate(-24deg); }
@@ -32,6 +34,9 @@ body {
   60% { transform: rotate(-9deg); }
   75% { transform: rotate(4deg); }
 }
+
+#bird .wing { transform-box: fill-box; transform-origin: 50% 100%; animation: flap .15s ease-in-out infinite alternate; }
+@keyframes flap { to { transform: scaleY(-.7); } }
 
 #redkid .cheer, #beo .poke { display: none; }
 #redkid.cheer .cheer, #beo.poking .poke { display: inline; }

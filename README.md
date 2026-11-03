@@ -19,6 +19,7 @@ Source sounds are in `sfx/`: CC0 previews from Freesound. Run `./build-sfx.sh` t
 - thud: found matress hit, https://freesound.org/s/405705/
 - bump: soft-hit.wav, https://freesound.org/s/653910/
 - chime: GASP_Chimes_Success_4, https://freesound.org/s/541985/
+- wind: gust of wind.wav, https://freesound.org/s/80937/
 
 Run locally:
 
